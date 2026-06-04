@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { uploadImage } from "@/lib/cloudinary";
+import { uploadImage } from "@/lib/storage";
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = ["image/png", "image/jpg", "image/jpeg"];
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const url = await uploadImage(buffer);
+  const url = await uploadImage(buffer, file.name);
 
   return NextResponse.json({ url });
 }
