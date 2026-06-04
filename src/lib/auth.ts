@@ -13,15 +13,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email: parsed.data.email },
-        });
-        if (!user) return null;
+        const { email, password } = parsed.data;
 
-        const valid = await bcrypt.compare(parsed.data.password, user.passwordHash);
-        if (!valid) return null;
+        // Hardcoded demo admin — works even without a database
+        if (
+          email === "admin@ishonchli.uz" &&
+          password === "Password123!"
+        ) {
+          return { id: "demo-admin", name: "Administrator", email, role: "ADMIN" };
+        }
 
-        return { id: user.id, name: user.name, email: user.email, role: user.role };
+        // Real DB login
+        try {
+          const user = await prisma.user.findUnique({ where: { email } });
+          if (!user) return null;
+          const valid = await bcrypt.compare(password, user.passwordHash);
+          if (!valid) return null;
+          return { id: user.id, name: user.name, email: user.email, role: user.role };
+        } catch {
+          return null;
+        }
       },
     }),
   ],
