@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { prisma } from "@/lib/prisma";
 import { ReportCard } from "@/components/report/ReportCard";
 import { getTranslations, getLocale } from "next-intl/server";

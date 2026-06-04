@@ -1,8 +1,12 @@
+import NextAuth from "next-auth";
 import createMiddleware from "next-intl/middleware";
-import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { routing } from "@/i18n/routing";
+import { authConfig } from "@/auth.config";
 import type { NextAuthRequest } from "next-auth";
+
+// Edge-safe auth using authConfig (no bcrypt/prisma)
+const { auth } = NextAuth(authConfig);
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -32,7 +36,9 @@ export default auth((req: NextAuthRequest) => {
   }
 
   if (isAdmin && session?.user?.role !== "ADMIN") {
-    return NextResponse.redirect(new URL(`/${localePrefix ?? routing.defaultLocale}`, req.url));
+    return NextResponse.redirect(
+      new URL(`/${localePrefix ?? routing.defaultLocale}`, req.url)
+    );
   }
 
   return intlMiddleware(req);
