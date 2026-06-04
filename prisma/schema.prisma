@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ReportStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ReportType {
+  FRAUD
+  POSITIVE
+}
+
+enum ReportCategory {
+  SCAM
+  FAKE_PRODUCT
+  NON_DELIVERY
+  PAYMENT_FRAUD
+  ACCOUNT_THEFT
+  OTHER
+}
+
+enum RiskLevel {
+  SAFE
+  MODERATE
+  HIGH
+  DANGEROUS
+}
+
+enum VoteType {
+  UPVOTE
+  DOWNVOTE
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         Role      @default(USER)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  reports   Report[]
+  comments  Comment[]
+  votes     Vote[]
+  favorites Favorite[]
+}
+
+model Seller {
+  id                  String    @id @default(cuid())
+  phone               String?
+  telegramUsername    String?
+  marketplaceUsername String?
+  trustScore          Int       @default(50)
+  riskLevel           RiskLevel @default(MODERATE)
+  suspiciousFlag      Boolean   @default(false)
+  potentialFraudster  Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  reports   Report[]
+  favorites Favorite[]
+}
+
+model Report {
+  id          String         @id @default(cuid())
+  sellerId    String
+  userId      String
+  category    ReportCategory @default(OTHER)
+  description String
+  evidenceUrl String?
+  status      ReportStatus   @default(PENDING)
+  type        ReportType     @default(FRAUD)
+  rating      Int?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  seller   Seller    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments Comment[]
+  votes    Vote[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  reportId  String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Vote {
+  id       String   @id @default(cuid())
+  reportId String
+  userId   String
+  voteType VoteType
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reportId, userId])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  sellerId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  seller Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sellerId])
+}
