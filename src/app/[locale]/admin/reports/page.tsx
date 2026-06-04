@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
+import { safeDb } from "@/lib/safe-db";
 import { ReportModerationTable } from "./ReportModerationTable";
 
 interface AdminReportsPageProps {
@@ -17,7 +18,7 @@ export default async function AdminReportsPage({ searchParams }: AdminReportsPag
     ? { status: status as "PENDING" | "APPROVED" | "REJECTED" }
     : {};
 
-  const [reports, total] = await Promise.all([
+  const [reports, total] = await safeDb(() => Promise.all([
     prisma.report.findMany({
       where,
       skip,
@@ -29,7 +30,7 @@ export default async function AdminReportsPage({ searchParams }: AdminReportsPag
       },
     }),
     prisma.report.count({ where }),
-  ]);
+  ]), [[], 0]);
 
   return (
     <div>

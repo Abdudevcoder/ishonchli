@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { safeDb } from "@/lib/safe-db";
 import { TrustScore } from "@/components/ui/TrustScore";
 import { Badge } from "@/components/ui/Badge";
 import { ReportCard } from "@/components/report/ReportCard";
@@ -18,7 +19,7 @@ export default async function SellerPage({ params }: SellerPageProps) {
   const tTrust = await getTranslations("trust");
   const locale = await getLocale();
 
-  const seller = await prisma.seller.findUnique({
+  const seller = await safeDb(() => prisma.seller.findUnique({
     where: { id },
     include: {
       reports: {
@@ -30,7 +31,7 @@ export default async function SellerPage({ params }: SellerPageProps) {
         orderBy: { createdAt: "desc" },
       },
     },
-  });
+  }), null);
 
   if (!seller) notFound();
 

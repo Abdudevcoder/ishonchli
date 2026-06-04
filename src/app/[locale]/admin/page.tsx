@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
+import { safeDb } from "@/lib/safe-db";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
@@ -12,7 +13,7 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [totalUsers, totalSellers, totalReports, approvedReports, rejectedReports, pendingReports, fraudReports, newToday] = await Promise.all([
+  const [totalUsers, totalSellers, totalReports, approvedReports, rejectedReports, pendingReports, fraudReports, newToday] = await safeDb(() => Promise.all([
     prisma.user.count(),
     prisma.seller.count(),
     prisma.report.count(),
@@ -21,7 +22,7 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
     prisma.report.count({ where: { status: "PENDING" } }),
     prisma.report.count({ where: { type: "FRAUD", status: "APPROVED" } }),
     prisma.report.count({ where: { createdAt: { gte: today } } }),
-  ]);
+  ]), [0, 0, 0, 0, 0, 0, 0, 0]);
 
   const stats = [
     { label: t("total_users"), value: totalUsers, color: "text-blue-600", bg: "bg-blue-50" },
@@ -34,10 +35,10 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
     { label: t("new_today"), value: newToday, color: "text-blue-700", bg: "bg-blue-50" },
   ];
 
-  const recentReports = await prisma.report.findMany({
+  const recentReports = await safeDb(() => prisma.report.findMany({
     take: 8, where: { status: "PENDING" }, orderBy: { createdAt: "desc" },
     include: { seller: { select: { phone: true, telegramUsername: true, marketplaceUsername: true } }, user: { select: { name: true } } },
-  });
+  }), []);
 
   return (
     <div>

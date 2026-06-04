@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
+import { safeDb } from "@/lib/safe-db";
 import { SellerCard } from "@/components/seller/SellerCard";
 import { getTranslations, getLocale } from "next-intl/server";
 
@@ -14,8 +15,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const t = await getTranslations("search");
   const locale = await getLocale();
 
-  const sellers = query
-    ? await prisma.seller.findMany({
+  const sellers = await safeDb(() => query
+    ? prisma.seller.findMany({
         where: {
           OR: [
             { phone: { contains: query, mode: "insensitive" } },
@@ -25,7 +26,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         },
         take: 30,
       })
-    : await prisma.seller.findMany({ take: 20, orderBy: { createdAt: "desc" } });
+    : prisma.seller.findMany({ take: 20, orderBy: { createdAt: "desc" } }), []);
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

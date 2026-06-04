@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
+import { safeDb } from "@/lib/safe-db";
 import { UserManagementTable } from "./UserManagementTable";
 
 interface AdminUsersPageProps {
@@ -13,7 +14,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
   const limit = 20;
   const skip = (page - 1) * limit;
 
-  const [users, total] = await Promise.all([
+  const [users, total] = await safeDb(() => Promise.all([
     prisma.user.findMany({
       skip,
       take: limit,
@@ -24,7 +25,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
       },
     }),
     prisma.user.count(),
-  ]);
+  ]), [[], 0]);
 
   return (
     <div>

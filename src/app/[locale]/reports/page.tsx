@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
+import { safeDb } from "@/lib/safe-db";
 import { ReportCard } from "@/components/report/ReportCard";
 import { getTranslations, getLocale } from "next-intl/server";
 import Link from "next/link";
@@ -23,7 +24,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     ...(type === "positive" ? { type: "POSITIVE" as const } : {}),
   };
 
-  const [reports, total] = await Promise.all([
+  const [reports, total] = await safeDb(() => Promise.all([
     prisma.report.findMany({
       where,
       skip,
@@ -36,7 +37,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       },
     }),
     prisma.report.count({ where }),
-  ]);
+  ]), [[], 0]);
 
   const totalPages = Math.ceil(total / limit);
 

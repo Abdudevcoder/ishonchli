@@ -1,10 +1,11 @@
 export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
+import { safeDb } from "@/lib/safe-db";
 import { StatisticsCharts } from "./StatisticsCharts";
 
 export default async function StatisticsPage() {
-  const [categoryDistribution, riskDistribution, recentActivity] = await Promise.all([
+  const [categoryDistribution, riskDistribution, recentActivity] = await safeDb(() => Promise.all([
     prisma.report.groupBy({
       by: ["category"],
       where: { type: "FRAUD" },
@@ -14,7 +15,6 @@ export default async function StatisticsPage() {
       by: ["riskLevel"],
       _count: { _all: true },
     }),
-    // Reports by month (last 6)
     prisma.report.findMany({
       where: {
         createdAt: { gte: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000) },
@@ -22,7 +22,7 @@ export default async function StatisticsPage() {
       select: { createdAt: true, type: true, status: true },
       orderBy: { createdAt: "asc" },
     }),
-  ]);
+  ]), [[], [], []]);
 
   // Group by month
   const monthlyMap: Record<string, { fraud: number; positive: number }> = {};

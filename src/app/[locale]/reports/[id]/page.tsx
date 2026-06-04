@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
+import { safeDb } from "@/lib/safe-db";
 import { Badge } from "@/components/ui/Badge";
 import { TrustScore } from "@/components/ui/TrustScore";
 import { CommentSection } from "./CommentSection";
@@ -27,7 +28,7 @@ export default async function ReportPage({ params }: ReportPageProps) {
   const tCat = await getTranslations("categories");
   const tStatus = await getTranslations("status");
 
-  const report = await prisma.report.findUnique({
+  const report = await safeDb(() => prisma.report.findUnique({
     where: { id },
     include: {
       seller: true,
@@ -38,7 +39,7 @@ export default async function ReportPage({ params }: ReportPageProps) {
       },
       votes: { select: { userId: true, voteType: true } },
     },
-  });
+  }), null);
 
   if (!report) notFound();
 

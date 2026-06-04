@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { safeDb } from "@/lib/safe-db";
 import { SellerCard } from "@/components/seller/SellerCard";
 import { ReportCard } from "@/components/report/ReportCard";
 import { getTranslations, getLocale } from "next-intl/server";
@@ -11,8 +12,8 @@ export default async function HomePage() {
   const locale = await getLocale();
 
   const [recentSellers, recentReports, stats] = await Promise.all([
-    prisma.seller.findMany({ take: 4, orderBy: { createdAt: "desc" } }),
-    prisma.report.findMany({
+    safeDb(() => prisma.seller.findMany({ take: 4, orderBy: { createdAt: "desc" } }), []),
+    safeDb(() => prisma.report.findMany({
       where: { status: "APPROVED" },
       take: 4,
       orderBy: { createdAt: "desc" },
@@ -21,12 +22,12 @@ export default async function HomePage() {
         user: { select: { id: true, name: true } },
         _count: { select: { comments: true, votes: true } },
       },
-    }),
-    Promise.all([
+    }), []),
+    safeDb(() => Promise.all([
       prisma.seller.count(),
       prisma.report.count({ where: { type: "FRAUD", status: "APPROVED" } }),
       prisma.user.count(),
-    ]),
+    ]), [0, 0, 0]),
   ]);
 
   const [sellerCount, fraudCount, userCount] = stats;
